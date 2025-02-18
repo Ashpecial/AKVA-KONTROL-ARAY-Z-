@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROV Kontrol Arayüzü</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Helvetica, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+        }
+        .header img {
+            margin-right: 20px;
+        }
+        .button {
+            background-color: gray;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: orange;
+        }
+        .input {
+            background-color: gray;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+        }
+        .textarea {
+            background-color: gray;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            height: 150px;
+        }
+        .sensor-data {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='akvalogo.jpg') }}" alt="Logo" width="150" height="150">
+            <h1>ROV Kontrol Arayüzü</h1>
+        </div>
+        <div>
+            <label for="com_port">COM Port Seçin:</label>
+            <select id="com_port" class="input">
+                {% for port in com_ports %}
+                    <option value="{{ port }}">{{ port }}</option>
+                {% endfor %}
+            </select>
+            <button class="button" onclick="connect()">Bağlantı Kur</button>
+        </div>
+        <div>
+            <label for="commands">Komutlar (yön mesafe):</label>
+            <textarea id="commands" class="textarea"></textarea>
+            <button class="button" onclick="startAutonomousControl()">Başlat</button>
+        </div>
+        <div>
+            <label for="light_intensity">Işık Seviyesi (0-255):</label>
+            <input type="number" id="light_intensity" class="input">
+            <button class="button" onclick="setLights()">Işıkları Ayarla</button>
+        </div>
+        <div>
+            <label for="surge">Surge (İleri-Geri):</label>
+            <input type="number" id="surge" class="input">
+            <label for="strafe">Strafe (Sağa-Sola):</label>
+            <input type="number" id="strafe" class="input">
+            <label for="heave">Heave (Yukarı-Aşağı):</label>
+            <input type="number" id="heave" class="input">
+            <button class="button" onclick="setMovement()">Hareketi Ayarla</button>
+        </div>
+        <div>
+            <label for="angle">Açı (0-360):</label>
+            <input type="number" id="angle" class="input">
+            <button class="button" onclick="turn()">Dön</button>
+        </div>
+        <div>
+            <label for="degrees">Derece (-180 ile 180):</label>
+            <input type="number" id="degrees" class="input">
+            <button class="button" onclick="turnDegrees()">Derece ile Dön</button>
+        </div>
+        <button class="button" onclick="resetGyro()">Jiroskopu Sıfırla</button>
+        <button class="button" onclick="showCommands()">Komutları Göster</button>
+        <button class="button" onclick="toggleStrobe()">Çakar</button>
+        <button class="button" onclick="disarm()">Disarm</button>
+        <div class="sensor-data">
+            <h2>Sensör Verileri</h2>
+            <p>ROV State: <span id="rov_state"></span></p>
+            <p>Pitch: <span id="pitch"></span></p>
+            <p>Roll: <span id="roll"></span></p>
+            <p>Yaw: <span id="yaw"></span></p>
+            <p>Accel X: <span id="accel_x"></span></p>
+            <p>Accel Y: <span id="accel_y"></span></p>
+            <p>Accel Z: <span id="accel_z"></span></p>
+            <p>Depth: <span id="depth"></span></p>
+            <p>Batt V: <span id="batt_v"></span></p>
+            <p>Batt A: <span id="batt_a"></span></p>
+            <p>Water Temp: <span id="water_temp"></span></p>
+            <p>Internal Temp: <span id="internal_temp"></span></p>
+            <p>Err Code: <span id="err_code"></span></p>
+        </div>
+    </div>
+    <script>
+        function connect() {
+            const com_port = document.getElementById('com_port').value;
+            fetch('/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ com_port })
+            }).then(response => response.json())
+              .then(data => alert(data.message));
+        }
+
+        function startAutonomousControl() {
+            const commands = document.getElementById('commands').value.split('\n');
+            fetch('/start_autonomous_control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ commands })
+            }).then(response => response.json())
+              .then(data => alert(data.status));
+        }
+
+        function setLights() {
+            const light_intensity = document.getElementById('light_intensity').value;
+            fetch('/set_lights', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ light_intensity })
+            }).then(response => response.json())
+              .then(data => alert(data.message));
+        }
+
+        function setMovement() {
+            const surge = document.getElementById('surge').value;
+            const strafe = document.getElementById('strafe').value;
+            const heave = document.getElementById('heave').value;
+            fetch('/set_movement', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ surge, strafe, heave })
+            }).then(response => response.json())
+              .then(data => alert(data.message));
+        }
+
+        function turn() {
+            const angle = document.getElementById('angle').value;
+            fetch('/turn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ angle })
+            }).then(response => response.json())
+              .then(data => alert(data.message));
+        }
+
+        function turnDegrees() {
+            const degrees = document.getElementById('degrees').value;
+            fetch('/turn_degrees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ degrees })
+            }).then(response => response.json())
+              .then(data => alert(data.message));
+        }
+
+        function resetGyro() {
+            fetch('/reset_gyro', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message));
+        }
+
+        function showCommands() {
+            alert("forward: Aracı ileri hareket ettirir.\nbackward: Aracı geri hareket ettirir.\nleft: Aracı sola hareket ettirir.\nright: Aracı sağa hareket ettirir.\nup: Aracı yukarı hareket ettirir.\ndown: Aracı aşağı hareket ettirir.");
+        }
+
+        function toggleStrobe() {
+            fetch('/toggle_strobe', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message));
+        }
+
+        function disarm() {
+            fetch('/disarm', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message));
+        }
+
+        function updateSensorData() {
+            fetch('/get_sensor_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status !== "error") {
+                        document.getElementById('rov_state').innerText = data.rovState;
+                        document.getElementById('pitch').innerText = data.pitch;
+                        document.getElementById('roll').innerText = data.roll;
+                        document.getElementById('yaw').innerText = data.yaw;
+                        document.getElementById('accel_x').innerText = data.accelX;
+                        document.getElementById('accel_y').innerText = data.accelY;
+                        document.getElementById('accel_z').innerText = data.accelZ;
+                        document.getElementById('depth').innerText = data.depth;
+                        document.getElementById('batt_v').innerText = data.battV;
+                        document.getElementById('batt_a').innerText = data.battA;
+                        document.getElementById('water_temp').innerText = data.waterTemp;
+                        document.getElementById('internal_temp').innerText = data.internalTemp;
+                        document.getElementById('err_code').innerText = data.errCode;
+                    }
+                });
+        }
+
+        setInterval(updateSensorData, 1000);  // Sensör verilerini her saniye güncelle
+    </script>
+</body>
+</html>
