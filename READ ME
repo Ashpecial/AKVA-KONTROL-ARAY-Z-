@@ -1,0 +1,7 @@
+akva logo.jpg doyasını satic klasörü oluşturup içine at
+
+(main.cpython-312.pyc),(rov.cpython-312.pyc),(serialLink.cpython-312.pyc) kodlarını __pycache__ isimli klasör oluşturup içine at
+
+index.html templates isimli klasör oluşturup içine at
+
+!!!BÜTÜN DOSYALAR (src) KLASÖRÜ İÇİNDE OLACAK!!!
